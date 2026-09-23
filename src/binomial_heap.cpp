@@ -55,6 +55,87 @@ void BinomialHeap::insert(double costo, int vertice) {
     ++cantidad;
 }
 
+BinomialHeap::Node* BinomialHeap::unionRoots(Node* primera, Node* segunda) {
+    Node auxiliar{};
+    Node* ultimo = &auxiliar;
+    while (primera != nullptr && segunda != nullptr) {
+        if (primera->grado <= segunda->grado) {
+            ultimo->hermano = primera;
+            primera = primera->hermano;
+        } else {
+            ultimo->hermano = segunda;
+            segunda = segunda->hermano;
+        }
+        ultimo = ultimo->hermano;
+    }
+    ultimo->hermano = (primera != nullptr) ? primera : segunda;
+
+    Node* cabeza = auxiliar.hermano;
+    Node* anterior = nullptr;
+    Node* actual = cabeza;
+    while (actual != nullptr && actual->hermano != nullptr) {
+        Node* siguiente = actual->hermano;
+        // Con tres grados iguales, avanzamos para enlazar los últimos dos.
+        if (actual->grado != siguiente->grado ||
+            (siguiente->hermano != nullptr &&
+             siguiente->hermano->grado == actual->grado)) {
+            anterior = actual;
+            actual = siguiente;
+        } else {
+            Node* resto = siguiente->hermano;
+            actual = linkTrees(actual, siguiente);
+            actual->hermano = resto;
+            if (anterior == nullptr) {
+                cabeza = actual;
+            } else {
+                anterior->hermano = actual;
+            }
+        }
+    }
+    return cabeza;
+}
+
+std::pair<double, int> BinomialHeap::extractMin() {
+    if (empty()) {
+        throw std::underflow_error("La cola esta vacia");
+    }
+
+    Node* minimo = raices;
+    Node* anteriorMinimo = nullptr;
+    Node* anterior = nullptr;
+    for (Node* actual = raices; actual != nullptr; actual = actual->hermano) {
+        if (actual->costo < minimo->costo) {
+            minimo = actual;
+            anteriorMinimo = anterior;
+        }
+        anterior = actual;
+    }
+
+    if (anteriorMinimo == nullptr) {
+        raices = minimo->hermano;
+    } else {
+        anteriorMinimo->hermano = minimo->hermano;
+    }
+
+    // Los hijos pasan a ser raíces, en orden creciente de grado.
+    Node* hijos = nullptr;
+    Node* actual = minimo->hijo;
+    while (actual != nullptr) {
+        Node* siguiente = actual->hermano;
+        actual->padre = nullptr;
+        actual->hermano = hijos;
+        hijos = actual;
+        actual = siguiente;
+    }
+    raices = unionRoots(raices, hijos);
+
+    std::pair<double, int> resultado{minimo->costo, minimo->vertice};
+    handles[minimo->vertice] = nullptr;
+    --cantidad;
+    delete minimo;
+    return resultado;
+}
+
 bool BinomialHeap::empty() const {
     return cantidad == 0;
 }

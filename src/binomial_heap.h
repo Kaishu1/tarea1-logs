@@ -2,6 +2,7 @@
 #define BINOMIAL_HEAP_H
 
 #include <cstddef>
+#include <utility>
 #include <vector>
 
 class BinomialHeap {
@@ -28,6 +29,9 @@ public:
     // Inserta un vértice ausente; rechaza índices inválidos y costos NaN.
     void insert(double costo, int vertice);
 
+    // Elimina y devuelve (costo, vértice) mínimo; lanza underflow_error si está vacía.
+    std::pair<double, int> extractMin();
+
     bool empty() const;
     std::size_t size() const;
 
@@ -42,6 +46,8 @@ private:
 
     // Une dos árboles del mismo grado y devuelve su nueva raíz.
     static Node* linkTrees(Node* primero, Node* segundo);
+    // Mezcla raíces ordenadas por grado y enlaza árboles de igual grado.
+    static Node* unionRoots(Node* primera, Node* segunda);
     static void destroyTrees(Node* raiz);
 };
 

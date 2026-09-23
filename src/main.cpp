@@ -31,7 +31,8 @@ std::size_t verificarArbol(const BinomialHeap& cola,
 }
 
 // Revisa raíces con grados crecientes y presencia de cada vértice esperado.
-void verificarCola(const BinomialHeap& cola, const std::vector<double>& costos) {
+void verificarCola(const BinomialHeap& cola, const std::vector<double>& costos,
+                   const std::vector<bool>& presentes) {
     std::vector<bool> visitados(costos.size(), false);
     std::size_t cantidad = 0;
     int gradoAnterior = -1;
@@ -42,12 +43,46 @@ void verificarCola(const BinomialHeap& cola, const std::vector<double>& costos) 
         cantidad += verificarArbol(cola, raiz, visitados);
     }
     assert(cantidad == cola.size());
-    assert(cantidad == costos.size());
-    assert(cola.empty() == costos.empty());
+    assert(cola.empty() == (cantidad == 0));
     for (std::size_t v = 0; v < costos.size(); ++v) {
-        assert(visitados[v]);
-        assert(cola.handle(static_cast<int>(v))->costo == costos[v]);
+        assert(visitados[v] == presentes[v]);
+        if (presentes[v]) {
+            assert(cola.handle(static_cast<int>(v))->costo == costos[v]);
+        } else {
+            assert(cola.handle(static_cast<int>(v)) == nullptr);
+        }
     }
+}
+
+void verificarCola(const BinomialHeap& cola, const std::vector<double>& costos) {
+    verificarCola(cola, costos, std::vector<bool>(costos.size(), true));
+}
+
+// Extrae todos los pares y revisa orden, estructura y handles tras cada extracción.
+void verificarExtracciones(BinomialHeap& cola, const std::vector<double>& costos) {
+    std::vector<bool> presentes(costos.size(), true);
+    double anterior = -std::numeric_limits<double>::infinity();
+    for (std::size_t i = 0; i < costos.size(); ++i) {
+        const auto [costo, vertice] = cola.extractMin();
+        assert(vertice >= 0 && static_cast<std::size_t>(vertice) < costos.size());
+        assert(presentes[vertice]);
+        assert(costo == costos[vertice]);
+        assert(costo >= anterior);
+        anterior = costo;
+        presentes[vertice] = false;
+        assert(cola.size() == costos.size() - i - 1);
+        verificarCola(cola, costos, presentes);
+    }
+    assert(cola.empty());
+    assert(cola.roots() == nullptr);
+
+    bool vaciaRechazada = false;
+    try {
+        cola.extractMin();
+    } catch (const std::underflow_error&) {
+        vaciaRechazada = true;
+    }
+    assert(vaciaRechazada);
 }
 
 int main() {
@@ -56,11 +91,13 @@ int main() {
         {}, {0.5}, {0.8, 0.2},
         {0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2},
         {0.4, 0.4, 0.1, 0.7, 0.1},
+        {0.01, 0.8, 0.3, 0.6, 0.2, 0.9, 0.4, 0.7, 0.5, 0.2, 0.6, 0.3, 0.8},
         {infinito, infinito, 0.0, infinito, infinito}
     };
     for (const auto& costos : casos) {
         BinomialHeap cola(costos);
         verificarCola(cola, costos);
+        verificarExtracciones(cola, costos);
     }
 
     BinomialHeap incremental(17);
@@ -88,7 +125,15 @@ int main() {
     }
     assert(indiceRechazado);
     verificarCola(incremental, costos);
+    verificarExtracciones(incremental, costos);
 
-    std::cout << "Pruebas de construccion e insercion: OK\n";
+    // Reutilizar los vértices extraídos debe volver a crear sus handles.
+    for (int v = 0; v < 17; ++v) {
+        incremental.insert(costos[v], v);
+    }
+    verificarCola(incremental, costos);
+    verificarExtracciones(incremental, costos);
+
+    std::cout << "Pruebas de construccion, insercion y extractMin: OK\n";
     return 0;
 }
