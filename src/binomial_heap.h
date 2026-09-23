@@ -32,6 +32,10 @@ public:
     // Elimina y devuelve (costo, vértice) mínimo; lanza underflow_error si está vacía.
     std::pair<double, int> extractMin();
 
+    // Reduce el costo de un vértice presente y devuelve la cantidad de intercambios.
+    // Rechaza índices inválidos, vértices ausentes, costos NaN y aumentos de costo.
+    std::size_t decreaseKey(int vertice, double nuevoCosto);
+
     bool empty() const;
     std::size_t size() const;
 

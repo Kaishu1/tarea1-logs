@@ -85,6 +85,72 @@ void verificarExtracciones(BinomialHeap& cola, const std::vector<double>& costos
     assert(vaciaRechazada);
 }
 
+// Prueba reducciones consecutivas y el número de intercambios de cada llamada.
+void verificarDecreaseKey() {
+    std::vector<double> costos{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
+    BinomialHeap cola(costos);
+    struct Reduccion {
+        int vertice;
+        double costo;
+        std::size_t intercambios;
+    };
+    const std::vector<Reduccion> reducciones = {
+        {0, 0.05, 0},    // Reducir la raíz no requiere intercambios.
+        {7, 0.75, 0},    // Sigue siendo mayor que su padre.
+        {7, 0.75, 0},    // Mantener el mismo costo no cambia nada.
+        {7, 0.7, 0},     // Igualar al padre tampoco requiere intercambios.
+        {7, 0.01, 3},    // Sube desde profundidad tres hasta la raíz.
+        {0, 0.005, 1},   // Usa el handle de un vértice desplazado.
+        {7, 0.001, 1},   // Vuelve a reducir el mismo vértice tras moverse.
+        {6, 0.0001, 3}
+    };
+    for (const auto& reduccion : reducciones) {
+        const auto intercambios = cola.decreaseKey(reduccion.vertice, reduccion.costo);
+        assert(intercambios == reduccion.intercambios);
+        costos[reduccion.vertice] = reduccion.costo;
+        verificarCola(cola, costos);
+    }
+
+    for (int vertice : {-1, 8}) {
+        bool rechazado = false;
+        try {
+            cola.decreaseKey(vertice, 0.0);
+        } catch (const std::out_of_range&) {
+            rechazado = true;
+        }
+        assert(rechazado);
+        verificarCola(cola, costos);
+    }
+    for (double costo : {0.9, std::numeric_limits<double>::quiet_NaN()}) {
+        bool rechazado = false;
+        try {
+            cola.decreaseKey(0, costo);
+        } catch (const std::invalid_argument&) {
+            rechazado = true;
+        }
+        assert(rechazado);
+        verificarCola(cola, costos);
+    }
+    verificarExtracciones(cola, costos);
+
+    bool ausenteRechazado = false;
+    try {
+        cola.decreaseKey(0, 0.0);
+    } catch (const std::invalid_argument&) {
+        ausenteRechazado = true;
+    }
+    assert(ausenteRechazado);
+    assert(cola.empty());
+
+    std::vector<double> iniciales{0.0, std::numeric_limits<double>::infinity()};
+    BinomialHeap inicioPrim(iniciales);
+    const auto intercambios = inicioPrim.decreaseKey(1, 0.5);
+    assert(intercambios == 0);
+    iniciales[1] = 0.5;
+    verificarCola(inicioPrim, iniciales);
+    verificarExtracciones(inicioPrim, iniciales);
+}
+
 int main() {
     const double infinito = std::numeric_limits<double>::infinity();
     const std::vector<std::vector<double>> casos = {
@@ -134,6 +200,8 @@ int main() {
     verificarCola(incremental, costos);
     verificarExtracciones(incremental, costos);
 
-    std::cout << "Pruebas de construccion, insercion y extractMin: OK\n";
+    verificarDecreaseKey();
+
+    std::cout << "Pruebas de construccion, insercion, extractMin y decreaseKey: OK\n";
     return 0;
 }

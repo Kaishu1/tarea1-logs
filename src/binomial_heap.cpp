@@ -95,6 +95,8 @@ BinomialHeap::Node* BinomialHeap::unionRoots(Node* primera, Node* segunda) {
     return cabeza;
 }
 
+// extractMin(Q)
+// qué hace: obtener y eliminar el par de menor costo
 std::pair<double, int> BinomialHeap::extractMin() {
     if (empty()) {
         throw std::underflow_error("La cola esta vacia");
@@ -134,6 +136,36 @@ std::pair<double, int> BinomialHeap::extractMin() {
     --cantidad;
     delete minimo;
     return resultado;
+}
+
+// decreaseKey(Q, v, k)
+// qué hace: acceder al par que representa al nodo v y reducir su costo a c
+std::size_t BinomialHeap::decreaseKey(int vertice, double nuevoCosto) {
+    if (vertice < 0 || static_cast<std::size_t>(vertice) >= handles.size()) {
+        throw std::out_of_range("Vertice fuera de rango");
+    }
+    Node* actual = handles[vertice];
+    if (actual == nullptr) {
+        throw std::invalid_argument("El vertice no esta en la cola");
+    }
+    if (std::isnan(nuevoCosto) || nuevoCosto > actual->costo) {
+        throw std::invalid_argument("El nuevo costo debe ser menor o igual al actual");
+    }
+
+    actual->costo = nuevoCosto;
+    std::size_t intercambios = 0;
+    Node* padre = actual->padre;
+    while (padre != nullptr && actual->costo < padre->costo) {
+        std::swap(actual->costo, padre->costo);
+        std::swap(actual->vertice, padre->vertice);
+        // Ambos nodos representan otros vértices después del intercambio.
+        handles[actual->vertice] = actual;
+        handles[padre->vertice] = padre;
+        ++intercambios;
+        actual = padre;
+        padre = actual->padre;
+    }
+    return intercambios;
 }
 
 bool BinomialHeap::empty() const {
