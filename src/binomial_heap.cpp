@@ -19,10 +19,10 @@ BinomialHeap::~BinomialHeap() {
 }
 
 BinomialHeap::Node* BinomialHeap::linkTrees(Node* primero, Node* segundo) {
-    if (segundo->costo < primero->costo) {
+    if (segundo->content.key < primero->content.key) {
         std::swap(primero, segundo);
     }
-    segundo->padre = primero;
+    segundo->parent = primero;
     segundo->hermano = primero->hijo;
     primero->hijo = segundo;
     ++primero->grado;
@@ -40,7 +40,7 @@ void BinomialHeap::insert(double costo, int vertice) {
         throw std::invalid_argument("El costo no puede ser NaN");
     }
 
-    Node* nuevo = new Node{costo, vertice, 0, nullptr, nullptr, nullptr};
+    Node* nuevo = new Node{{costo, vertice}, 0, nullptr, nullptr, nullptr};
     handles[vertice] = nuevo;
 
     // Cada enlace propaga un acarreo; no se recorren las raíces restantes.
@@ -106,7 +106,7 @@ std::pair<double, int> BinomialHeap::extractMin() {
     Node* anteriorMinimo = nullptr;
     Node* anterior = nullptr;
     for (Node* actual = raices; actual != nullptr; actual = actual->hermano) {
-        if (actual->costo < minimo->costo) {
+        if (actual->content.key < minimo->content.key) {
             minimo = actual;
             anteriorMinimo = anterior;
         }
@@ -124,46 +124,45 @@ std::pair<double, int> BinomialHeap::extractMin() {
     Node* actual = minimo->hijo;
     while (actual != nullptr) {
         Node* siguiente = actual->hermano;
-        actual->padre = nullptr;
+        actual->parent = nullptr;
         actual->hermano = hijos;
         hijos = actual;
         actual = siguiente;
     }
     raices = unionRoots(raices, hijos);
 
-    std::pair<double, int> resultado{minimo->costo, minimo->vertice};
-    handles[minimo->vertice] = nullptr;
+    std::pair<double, int> resultado{minimo->content.key, minimo->content.vertice};
+    handles[minimo->content.vertice] = nullptr;
     --cantidad;
     delete minimo;
     return resultado;
 }
 
-// decreaseKey(Q, v, k)
+// decreaseKey(Q, v, c)
 // qué hace: acceder al par que representa al nodo v y reducir su costo a c
-std::size_t BinomialHeap::decreaseKey(int vertice, double nuevoCosto) {
-    if (vertice < 0 || static_cast<std::size_t>(vertice) >= handles.size()) {
+std::size_t BinomialHeap::decreaseKey(int v, double c) {
+    if (v < 0 || static_cast<std::size_t>(v) >= handles.size()) {
         throw std::out_of_range("Vertice fuera de rango");
     }
-    Node* actual = handles[vertice];
-    if (actual == nullptr) {
+    Node* x = handles[v];
+    if (x == nullptr) {
         throw std::invalid_argument("El vertice no esta en la cola");
     }
-    if (std::isnan(nuevoCosto) || nuevoCosto > actual->costo) {
+    if (std::isnan(c) || c > x->content.key) {
         throw std::invalid_argument("El nuevo costo debe ser menor o igual al actual");
     }
 
-    actual->costo = nuevoCosto;
     std::size_t intercambios = 0;
-    Node* padre = actual->padre;
-    while (padre != nullptr && actual->costo < padre->costo) {
-        std::swap(actual->costo, padre->costo);
-        std::swap(actual->vertice, padre->vertice);
+    x->content.key = c;
+    Node* y = x->parent;
+    while (y != nullptr && x->content.key < y->content.key) {
+        std::swap(x->content, y->content);
         // Ambos nodos representan otros vértices después del intercambio.
-        handles[actual->vertice] = actual;
-        handles[padre->vertice] = padre;
+        handles[x->content.vertice] = x;
+        handles[y->content.vertice] = y;
         ++intercambios;
-        actual = padre;
-        padre = actual->padre;
+        x = y;
+        y = x->parent;
     }
     return intercambios;
 }

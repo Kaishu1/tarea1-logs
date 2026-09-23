@@ -17,6 +17,6 @@ struct PrimResult {
 
 // Construye el MST del grafo desde una raíz válida usando la cola binomial.
 // Requiere un grafo conexo; devuelve sus aristas, peso total y contadores.
-PrimResult primBinomial(const Graph& grafo, int raiz);
+PrimResult primBinomial(const Graph& G, int r);
 
 #endif
