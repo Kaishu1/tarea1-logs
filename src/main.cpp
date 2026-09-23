@@ -1,6 +1,8 @@
 #include "binomial_heap.h"
+#include "prim.h"
 
 #include <cassert>
+#include <cmath>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
@@ -151,6 +153,70 @@ void verificarDecreaseKey() {
     verificarExtracciones(inicioPrim, iniciales);
 }
 
+// Comprueba que el resultado cubra todos los vértices sin ciclos y tenga el peso esperado.
+void verificarMST(const Graph& grafo, int raiz, const PrimResult& resultado,
+                  double pesoEsperado) {
+    assert(resultado.aristas.size() == grafo.numVertices() - 1);
+    std::vector<bool> incluidos(grafo.numVertices(), false);
+    incluidos[raiz] = true;
+    double suma = 0.0;
+    for (const auto& [u, v] : resultado.aristas) {
+        assert(u >= 0 && static_cast<std::size_t>(u) < grafo.numVertices());
+        assert(v >= 0 && static_cast<std::size_t>(v) < grafo.numVertices());
+        assert(incluidos[u] && !incluidos[v]);
+        bool existe = false;
+        for (const auto& vecino : grafo.neighbors(u)) {
+            if (vecino.vertice == v) {
+                existe = true;
+                suma += vecino.peso;
+                break;
+            }
+        }
+        assert(existe);
+        incluidos[v] = true;
+    }
+    for (bool incluido : incluidos) {
+        assert(incluido);
+    }
+    assert(std::abs(suma - resultado.pesoTotal) < 1e-12);
+    assert(std::abs(resultado.pesoTotal - pesoEsperado) < 1e-12);
+}
+
+// Prueba un MST conocido, distintas raíces, pesos repetidos y un solo vértice.
+void verificarPrimBinomial() {
+    Graph grafo(4);
+    grafo.addEdge(0, 1, 0.9);
+    grafo.addEdge(0, 2, 0.5);
+    grafo.addEdge(0, 3, 0.8);
+    grafo.addEdge(1, 2, 0.2);
+    grafo.addEdge(1, 3, 0.4);
+    grafo.addEdge(2, 3, 0.6);
+    // El MST usa 0--2, 2--1 y 1--3: peso 0.5 + 0.2 + 0.4 = 1.1.
+    for (int raiz = 0; raiz < 4; ++raiz) {
+        const auto resultado = primBinomial(grafo, raiz);
+        verificarMST(grafo, raiz, resultado, 1.1);
+        if (raiz == 0) {
+            assert(resultado.llamadasDecreaseKey == 6);
+            assert(resultado.intercambios > 0);
+        }
+    }
+
+    Graph repetidos(4);
+    repetidos.addEdge(0, 1, 0.5);
+    repetidos.addEdge(1, 2, 0.5);
+    repetidos.addEdge(2, 3, 0.5);
+    repetidos.addEdge(3, 0, 0.5);
+    const auto resultado = primBinomial(repetidos, 2);
+    verificarMST(repetidos, 2, resultado, 1.5);
+    assert(resultado.llamadasDecreaseKey == 3);
+
+    Graph unico(1);
+    const auto trivial = primBinomial(unico, 0);
+    verificarMST(unico, 0, trivial, 0.0);
+    assert(trivial.llamadasDecreaseKey == 0);
+    assert(trivial.intercambios == 0);
+}
+
 int main() {
     const double infinito = std::numeric_limits<double>::infinity();
     const std::vector<std::vector<double>> casos = {
@@ -201,7 +267,8 @@ int main() {
     verificarExtracciones(incremental, costos);
 
     verificarDecreaseKey();
+    verificarPrimBinomial();
 
-    std::cout << "Pruebas de construccion, insercion, extractMin y decreaseKey: OK\n";
+    std::cout << "Pruebas de cola binomial y Prim binomial: OK\n";
     return 0;
 }
