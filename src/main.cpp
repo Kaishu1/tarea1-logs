@@ -1,6 +1,9 @@
 #include "binomial_heap.h"
+#include "graph.h"
 
 #include <cassert>
+#include <cmath>
+#include <cstdint>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
@@ -50,6 +53,84 @@ void verificarCola(const BinomialHeap& cola, const std::vector<double>& costos) 
     }
 }
 
+// Revisa tamaños, aristas en ambos sentidos, pesos y conectividad del grafo.
+void verificarGrafo(const Graph& G, std::size_t cantidadVertices,
+                    std::size_t cantidadAristas) {
+    assert(G.numVertices() == cantidadVertices);
+    assert(cantidadVertices > 0);
+    std::size_t entradas = 0;
+
+    for (int u = 0; u < static_cast<int>(cantidadVertices); ++u) {
+        std::vector<bool> vecinosVistos(cantidadVertices, false);
+        for (const auto& [v, peso] : G.neighbors(u)) {
+            assert(v >= 0 && static_cast<std::size_t>(v) < cantidadVertices);
+            assert(u != v);
+            assert(!vecinosVistos[v]);
+            vecinosVistos[v] = true;
+            assert(std::isfinite(peso) && peso > 0.0 && peso <= 1.0);
+            ++entradas;
+
+            bool inversaEncontrada = false;
+            for (const auto& inversa : G.neighbors(v)) {
+                if (inversa.vertice == u) {
+                    assert(inversa.peso == peso);
+                    inversaEncontrada = true;
+                    break;
+                }
+            }
+            assert(inversaEncontrada);
+        }
+    }
+    // Cada arista no dirigida aparece en las listas de sus dos extremos.
+    assert(entradas == 2 * cantidadAristas);
+
+    std::vector<bool> visitados(cantidadVertices, false);
+    std::vector<int> pendientes{0};
+    visitados[0] = true;
+    for (std::size_t i = 0; i < pendientes.size(); ++i) {
+        for (const auto& vecino : G.neighbors(pendientes[i])) {
+            if (!visitados[vecino.vertice]) {
+                visitados[vecino.vertice] = true;
+                pendientes.push_back(vecino.vertice);
+            }
+        }
+    }
+    assert(pendientes.size() == cantidadVertices);
+}
+
+// Prueba grafos pequeños y que repetir tamaños y semilla produzca el mismo grafo.
+void verificarGenerador() {
+    struct Caso {
+        std::size_t vertices;
+        std::size_t aristas;
+    };
+    const std::vector<Caso> casos = {
+        {1, 0}, {2, 1},
+        {8, 7},    // Solo el árbol inicial.
+        {8, 12},   // Árbol más aristas adicionales.
+        {8, 28},   // Grafo completo: todos los pares distintos.
+        {64, 256}
+    };
+    for (std::uint64_t semilla : {0ULL, 1ULL, 42ULL}) {
+        for (const auto& caso : casos) {
+            const Graph G = generateConnectedGraph(caso.vertices, caso.aristas, semilla);
+            verificarGrafo(G, caso.vertices, caso.aristas);
+
+            const Graph repetido = generateConnectedGraph(caso.vertices, caso.aristas, semilla);
+            assert(G.numVertices() == repetido.numVertices());
+            for (int v = 0; v < static_cast<int>(caso.vertices); ++v) {
+                const auto& vecinos = G.neighbors(v);
+                const auto& mismos = repetido.neighbors(v);
+                assert(vecinos.size() == mismos.size());
+                for (std::size_t i = 0; i < vecinos.size(); ++i) {
+                    assert(vecinos[i].vertice == mismos[i].vertice);
+                    assert(vecinos[i].peso == mismos[i].peso);
+                }
+            }
+        }
+    }
+}
+
 int main() {
     const double infinito = std::numeric_limits<double>::infinity();
     const std::vector<std::vector<double>> casos = { // datitos de prueba
@@ -90,5 +171,8 @@ int main() {
     verificarCola(incremental, costos);
 
     std::cout << "Pruebas de construccion e insercion: OK\n";
+
+    verificarGenerador();
+    std::cout << "Pruebas del generador: conectividad, aristas, duplicados, pesos y reproducibilidad OK\n";
     return 0;
 }
