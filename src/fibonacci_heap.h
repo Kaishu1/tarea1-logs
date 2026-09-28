@@ -5,13 +5,13 @@
 #include <utility>
 #include <vector>
 
-CLASS FibonacciHeap {
+class FibonacciHeap {
 public:
     // Par que representa el coste y el vertice asociado    
     struct Content {
         double key;
         int vertice;
-    }
+    };
 
     // Estructura nodo de la cola de Fibonacci
     struct Node {
@@ -33,7 +33,7 @@ public:
 
     ~FibonacciHeap();
 
-    FibonacciHeap(const FibonacciHeap&) = delete
+    FibonacciHeap(const FibonacciHeap&) = delete;
     FibonacciHeap& operator=(const FibonacciHeap&) = delete;
 
     void insert(double costo, int vertice);
@@ -56,7 +56,7 @@ private:
 
     static void removeFromList(Node* nodo);
 
-    static void link(Node* child, Node* parent)
+    static void link(Node* child, Node* parent);
 
     void consolidate();
 
