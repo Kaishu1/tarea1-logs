@@ -17,6 +17,9 @@ FibonacciHeap::FibonacciHeap(const std::vector<double>& costos)
 }
 
 FibonacciHeap::~FibonacciHeap() {
+    if (minimo != nullptr) {
+        destroy(minimo);
+    }
 }
 
 void FibonacciHeap::addToRootList(Node* nodo) {
@@ -188,4 +191,111 @@ void FibonacciHeap::link(Node* child, Node* parent) {
     }
 
     ++parent->degree;
+}
+
+std::size_t FibonacciHeap::decreaseKey(int v, double c) {
+    if (v < 0 || static_cast<std::size_t>(v) >=handles.size()) {
+        throw std::out_of_range("Vertice fuera de rango");
+    }
+
+    Node* x = handles[v];
+
+    if (x == nullptr) {
+        throw std::invalid_argument("El vertice no esta en la cola");
+    }
+
+    if (std::isnan(c)) {
+        throw std::invalid_argument("El costo no puede ser NaN");
+    }
+
+    if (c > x->content.key) {
+        throw std::invalid_argument("El nuevo costo debe ser menor o igual al costo actual");
+    }
+
+    x->content.key = c;
+
+    Node* y = x->parent;
+    std::size_t num_cuts = 0;
+
+    if (y != nullptr && x->content.key < y->content.key) {
+        cut(x, y);
+        ++num_cuts;
+        
+        // Realizar cortes en cascada si es necesario
+        std::size_t antes = num_cuts;
+        cascadingCut(y);
+
+        (void)antes; // Evitar advertencia de variable no utilizada
+    }
+
+    if (x->content.key < minimo->content.key) {
+        minimo = x;
+    }
+    return num_cuts;
+}
+
+void FibonacciHeap::cut(Node* x, Node* y) {
+    // Eliminar x de la lista de hijos de y
+    if (x->right == x) {
+        y->child = nullptr;
+    } else {
+        if (y->child == x) {
+            y->child = x->right;
+        }
+        removeFromList(x);
+    }
+
+    --y->degree;
+
+    // x pasa a ser raíz
+    x->parent = nullptr;
+    x->marked = false;
+
+    addToRootList(x);
+}
+
+void FibonacciHeap::cascadingCut(Node* y) {
+    Node* z = y->parent;
+
+    if (z != nullptr) {
+        if (!y->marked) {
+            y->marked = true;
+        } else {
+            cut(y, z);
+            cascadingCut(z);
+        }
+    }
+}
+
+bool FibonacciHeap::empty() const {
+    return cantidad == 0;
+}
+
+std::size_t FibonacciHeap::size() const {
+    return cantidad;
+}
+
+const FibonacciHeap::Node* FibonacciHeap::handle(int vertice) const {
+    if (vertice < 0 || static_cast<std::size_t>(vertice) >= handles.size()) {
+        throw std::out_of_range("Vertice fuera de rango");
+    }
+    return handles[vertice];
+}
+
+void FibonacciHeap::destroy(Node* nodo) {
+    if (nodo == nullptr) {
+        return;
+    }
+
+    Node* actual = nodo;
+    do {
+        Node* siguiente = actual->right;
+
+        if (actual->child != nullptr) {
+            destroy(actual->child);
+        }
+
+        delete actual;
+        actual = siguiente;
+    } while (actual != nodo);
 }
