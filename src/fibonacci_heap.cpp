@@ -260,17 +260,18 @@ void FibonacciHeap::cut(Node* x, Node* y) {
 std::size_t FibonacciHeap::cascadingCut(Node* y) {
     Node* z = y->parent;
 
-    if (z != nullptr) {
+    if (z == nullptr) {
         return 0;
     }
 
     if (!y->marked) {
         y->marked = true;
         return 0;
-    } else {
-        cut(y, z);
-        return 1 + cascadingCut(z);
     }
+
+    cut(y, z);
+    return 1 + cascadingCut(z);
+
 }
 
 bool FibonacciHeap::empty() const {
