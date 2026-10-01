@@ -2,6 +2,7 @@
 #define GRAPH_H
 
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 // Grafo no dirigido y con pesos, representado mediante listas de adyacencia.
@@ -27,5 +28,11 @@ public:
 private:
     std::vector<std::vector<Neighbor>> adyacencia;
 };
+
+// Devuelve un grafo simple y conexo con V vértices y E aristas, y pesos uniformes en (0, 1].
+// Requiere V >= 1 y V - 1 <= E <= V * (V - 1) / 2.
+// Los mismos tamaños y semilla reproducen el grafo en el mismo entorno.
+Graph generateConnectedGraph(std::size_t cantidadVertices, std::size_t cantidadAristas,
+                            std::uint64_t semilla);
 
 #endif

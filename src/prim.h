@@ -13,10 +13,15 @@ struct PrimResult {
     double pesoTotal = 0.0;
     std::size_t llamadasDecreaseKey = 0;
     std::size_t intercambios = 0;
+    std::size_t cortes = 0;
 };
 
 // Construye el MST del grafo desde una raíz válida usando la cola binomial.
 // Requiere un grafo conexo; devuelve sus aristas, peso total y contadores.
 PrimResult primBinomial(const Graph& G, int r);
+
+// Construye el MST del grafo desde una raíz válida usando la cola de Fibonacci.
+// Requiere un grafo conexo; devuelve sus aristas, peso total y contadores.
+PrimResult primFibonacci(const Graph& G, int raiz);
 
 #endif
