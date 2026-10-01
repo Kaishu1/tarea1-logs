@@ -78,44 +78,45 @@ std::pair<double, int> FibonacciHeap::extractMin() {
         nodo_minimo->content.vertice
     };
 
+    std::vector<Node*> children;
+
     // Mover los hijos del nodo mínimo a la lista de raíces
     if (nodo_minimo->child != nullptr) {
-        Node* hijo = nodo_minimo->child;
-        Node* actual = hijo;
+        Node* current = nodo_minimo->child;
         do {
-            Node* siguiente_hijo = actual->right;
-            
-            actual->parent = nullptr;
-            actual->marked = false;
-
-            // Desconectar de la lista de hijos.
-            actual->left = actual;
-            actual->right = actual;
-
-            // Agregar como raiz
-            addToRootList(actual);
-            actual = siguiente_hijo;
-        } while (actual != hijo);
-
-        nodo_minimo->child = nullptr;
-        nodo_minimo->degree = 0;
+            children.push_back(current);
+            current = current->right;
+        } while (current != nodo_minimo->child);
     }
 
     // Eliminar el nodo mínimo de la lista de raíces
     if (nodo_minimo->right == nodo_minimo) {
         minimo = nullptr;
     } else {
-        Node* siguiente = nodo_minimo->right;
+        Node* next = nodo_minimo->right;
         removeFromList(nodo_minimo);
-        minimo = siguiente;
+        minimo = next;
     }
 
+    for (Node* child: children) {
+        child->parent = nullptr;
+        child->marked = false;
+
+        child->left = child;
+        child->right = child;
+
+        addToRootList(child);
+    }
+
+    nodo_minimo->child = nullptr;
+    nodo_minimo->degree = 0;
+
     handles[nodo_minimo->content.vertice] = nullptr;
+
     --cantidad;
 
     delete nodo_minimo;
 
-    // Consolidar los árboles en la lista de raíces
     if (minimo != nullptr) {
         consolidate();
     }
@@ -128,50 +129,51 @@ void FibonacciHeap::consolidate() {
         return;
     }
 
-    std::vector<Node*> tabla(64, nullptr); // Tamaño suficiente para la mayoría de los casos
+    std::vector<Node*> roots;
 
-    Node* actual = minimo;
-
-    std::vector<Node*> raices;
+    Node* current = minimo;
 
     do {
-        raices.push_back(actual);
-        actual = actual->right;
-    } while (actual != minimo);
+        roots.push_back(current);
+        current = current->right;
+    } while (current != minimo);
 
-    // Aislar todas las raíces antes de comenzar consolidación
-    for (Node* nodo : raices) {
-        nodo->left = nodo;
-        nodo->right = nodo;
+    // Separar todas las raíces de la lista circular.
+    for (Node* root : roots) {
+        root->left = root;
+        root->right = root;
     }
 
-    minimo = nullptr;
+    std::vector<Node*> table(64, nullptr);
 
-    // Combinar árboles de el mismo grado
-    for (Node* x : raices) {
+    for (Node* x : roots) {
         int degree = x->degree;
 
-        while (tabla[degree] != nullptr) {
-            Node* y = tabla[degree];
+        while (table[degree] != nullptr) {
+            Node* y = table[degree];
 
-            if (x->content.key > y->content.key) {
+            if (y->content.key < x->content.key) {
                 std::swap(x, y);
             }
 
             link(y, x);
-            tabla[degree] = nullptr;
+
+            table[degree] = nullptr;
             ++degree;
         }
 
-        tabla[degree] = x;
+        table[degree] = x;
     }
 
-    // Reconstruir la lista de raíces y encontrar el nuevo mínimo
-    for (Node* nodo : tabla) {
-        if (nodo != nullptr) {
-            nodo->left = nodo;
-            nodo->right = nodo;    
-            addToRootList(nodo);
+    // Reconstruir la lista de raíces.
+    minimo = nullptr;
+
+    for (Node* root : table) {
+        if (root != nullptr) {
+            root->left = root;
+            root->right = root;
+
+            addToRootList(root);
         }
     }
 }
