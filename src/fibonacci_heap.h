@@ -62,7 +62,7 @@ private:
 
     void cut(Node* x, Node* y);
 
-    void cascadingCut(Node* y);
+    std::size_t cascadingCut(Node* y);
 
     static void destroy(Node* nodo);
 

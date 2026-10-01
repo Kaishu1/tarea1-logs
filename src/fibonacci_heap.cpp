@@ -130,16 +130,24 @@ void FibonacciHeap::consolidate() {
 
     std::vector<Node*> tabla(64, nullptr); // Tamaño suficiente para la mayoría de los casos
 
-    Node* inicio = minimo;
-    Node* actual = inicio;
+    Node* actual = minimo;
 
     std::vector<Node*> raices;
 
     do {
         raices.push_back(actual);
         actual = actual->right;
-    } while (actual != inicio);
+    } while (actual != minimo);
 
+    // Aislar todas las raíces antes de comenzar consolidación
+    for (Node* nodo : raices) {
+        nodo->left = nodo;
+        nodo->right = nodo;
+    }
+
+    minimo = nullptr;
+
+    // Combinar árboles de el mismo grado
     for (Node* x : raices) {
         int degree = x->degree;
 
@@ -157,14 +165,12 @@ void FibonacciHeap::consolidate() {
 
         tabla[degree] = x;
     }
-    // Reconstruir la lista de raíces y encontrar el nuevo mínimo
-    minimo = nullptr;
 
+    // Reconstruir la lista de raíces y encontrar el nuevo mínimo
     for (Node* nodo : tabla) {
         if (nodo != nullptr) {
             nodo->left = nodo;
-            nodo->right = nodo;
-            
+            nodo->right = nodo;    
             addToRootList(nodo);
         }
     }
@@ -221,11 +227,8 @@ std::size_t FibonacciHeap::decreaseKey(int v, double c) {
         cut(x, y);
         ++num_cuts;
         
-        // Realizar cortes en cascada si es necesario
-        std::size_t antes = num_cuts;
-        cascadingCut(y);
-
-        (void)antes; // Evitar advertencia de variable no utilizada
+        // Contar los cortes en cascada si es necesario
+        num_cuts += cascadingCut(y);
     }
 
     if (x->content.key < minimo->content.key) {
@@ -254,16 +257,19 @@ void FibonacciHeap::cut(Node* x, Node* y) {
     addToRootList(x);
 }
 
-void FibonacciHeap::cascadingCut(Node* y) {
+std::size_t FibonacciHeap::cascadingCut(Node* y) {
     Node* z = y->parent;
 
     if (z != nullptr) {
-        if (!y->marked) {
-            y->marked = true;
-        } else {
-            cut(y, z);
-            cascadingCut(z);
-        }
+        return 0;
+    }
+
+    if (!y->marked) {
+        y->marked = true;
+        return 0;
+    } else {
+        cut(y, z);
+        return 1 + cascadingCut(z);
     }
 }
 
