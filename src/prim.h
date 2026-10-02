@@ -14,6 +14,7 @@ struct PrimResult {
     std::size_t llamadasDecreaseKey = 0;
     std::size_t intercambios = 0;
     std::size_t cortes = 0;
+    double tiempoDecreaseKey = 0.0;
 };
 
 // Construye el MST del grafo desde una raíz válida usando la cola binomial.

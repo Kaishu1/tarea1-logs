@@ -4,6 +4,7 @@
 
 #include <limits>
 #include <stdexcept>
+#include <chrono>
 
 PrimResult primBinomial(const Graph& G, int r) {
     const std::size_t n = G.numVertices();
@@ -33,7 +34,10 @@ PrimResult primBinomial(const Graph& G, int r) {
             if (Q.handle(u) != nullptr && w < costos[u]) {
                 costos[u] = w;
                 parent[u] = v;
+                const auto inicioDecreaseKey = std::chrono::steady_clock::now();
                 resultado.intercambios += Q.decreaseKey(u, w);
+                const auto finDecreaseKey = std::chrono::steady_clock::now();
+                resultado.tiempoDecreaseKey += std::chrono::duration<double>(finDecreaseKey - inicioDecreaseKey).count();
                 ++resultado.llamadasDecreaseKey;
             }
         }
@@ -83,7 +87,10 @@ PrimResult primFibonacci(const Graph& G, int r) {
             if (Q.handle(v) != nullptr && peso < costos[v]) {
                 costos[v] = peso;
                 parent[v] = u;
+                const auto inicioDecreaseKey = std::chrono::steady_clock::now();
                 resultado.cortes += Q.decreaseKey(v, peso);
+                const auto finDecreaseKey = std::chrono::steady_clock::now();
+                resultado.tiempoDecreaseKey += std::chrono::duration<double>(finDecreaseKey - inicioDecreaseKey).count();
                 ++resultado.llamadasDecreaseKey;
             }
         }
