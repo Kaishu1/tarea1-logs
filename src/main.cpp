@@ -1,4 +1,5 @@
 #include "binomial_heap.h"
+#include "experiments.h"
 #include "graph.h"
 #include "prim.h"
 
@@ -11,6 +12,7 @@
 #include <iostream>
 #include <limits>
 #include <new>
+#include <numeric>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -194,18 +196,23 @@ void mostrarProyecciones(std::uint64_t ramDisponible) {
               << std::left << std::setw(20) << "Caso" << std::right
               << std::setw(4) << "i" << std::setw(4) << "j"
               << std::setw(16) << "Logico MiB" << std::setw(18) << "Capacidad MiB"
+              << std::setw(16) << "Registro MiB"
               << std::setw(16) << "% RAM disp." << '\n';
     for (const auto& caso : casos) {
         const std::uint64_t V = std::uint64_t{1} << caso.i;
         const std::uint64_t E = std::uint64_t{1} << caso.j;
         const std::uint64_t entradas = 2 * E * sizeof(Graph::Neighbor);
+        const bool detalle = caso.j == 22;
+        const std::uint64_t registro = detalle ? E * sizeof(std::uint64_t) : 0;
         const std::uint64_t resto = V * (sizeof(std::vector<Graph::Neighbor>)
             + sizeof(BinomialHeap::Node) + sizeof(double) + sizeof(int)
-            + sizeof(BinomialHeap::Node*)) + (V - 1) * sizeof(std::pair<int, int>);
+            + sizeof(BinomialHeap::Node*))
+            + (detalle ? 2 : 1) * (V - 1) * sizeof(std::pair<int, int>) + registro;
         std::cout << std::left << std::setw(20) << caso.nombre << std::right
                   << std::setw(4) << caso.i << std::setw(4) << caso.j
                   << std::setw(16) << (entradas + resto) / (1024.0 * 1024.0)
-                  << std::setw(18) << (2 * entradas + resto) / (1024.0 * 1024.0);
+                  << std::setw(18) << (2 * entradas + resto) / (1024.0 * 1024.0)
+                  << std::setw(16) << registro / (1024.0 * 1024.0);
         if (ramDisponible > 0) {
             std::cout << std::setw(16) << 100.0 * (2 * entradas + resto) / ramDisponible;
         } else {
@@ -214,6 +221,7 @@ void mostrarProyecciones(std::uint64_t ramDisponible) {
         std::cout << '\n';
     }
     std::cout << "Capacidad: modelo con 4E espacios de adyacencia; porcentaje sobre ese modelo.\n"
+              << "C/D incluye registro y segundo MST para comparar las pasadas.\n"
               << "Excluye estructuras temporales y asignador; no equivale al pico residente.\n";
 }
 
@@ -337,7 +345,45 @@ int ejecutarMemoria() {
     return 0;
 }
 
-// Ejecuta las pruebas pequenas de la cola y del generador; devuelve cero si pasan.
+// Comprueba el MST conocido y que los registros no cambien el resultado de Prim.
+void verificarMedicionesPrim() {
+    Graph G(5);
+    G.addEdge(0, 1, 0.8);
+    G.addEdge(0, 2, 0.2);
+    G.addEdge(1, 2, 0.3);
+    G.addEdge(1, 3, 0.1);
+    G.addEdge(2, 3, 0.6);
+    G.addEdge(3, 4, 0.4);
+    G.addEdge(2, 4, 0.9);
+    const auto normal = primBinomial(G, 0);
+    assert(normal.aristas.size() == 4);
+    assert(std::abs(normal.pesoTotal - 1.0) < 1e-12);
+    RegistroDecreaseKey registro;
+    for (bool medirTiempo : {false, true, false}) {
+        registro.medirTiempo = medirTiempo;
+        const auto medido = primBinomial(G, 0, &registro);
+        assert(medido.aristas == normal.aristas);
+        assert(medido.pesoTotal == normal.pesoTotal);
+        assert(medido.intercambios == normal.intercambios);
+        assert(medido.llamadasDecreaseKey == normal.llamadasDecreaseKey);
+        assert(registro.valores.size() == normal.llamadasDecreaseKey);
+        if (!medirTiempo) {
+            assert(std::accumulate(registro.valores.begin(), registro.valores.end(),
+                                   std::uint64_t{0}) == normal.intercambios);
+        }
+    }
+    // Una llamada sin intercambios tambien debe quedar contada.
+    Graph par(2);
+    par.addEdge(0, 1, 0.5);
+    const auto T = primBinomial(par, 0, &registro);
+    assert(T.llamadasDecreaseKey == 1 && T.intercambios == 0);
+    assert(registro.valores == std::vector<std::uint64_t>{0});
+    Graph unico(1);
+    const auto vacio = primBinomial(unico, 0, &registro);
+    assert(vacio.aristas.empty() && vacio.pesoTotal == 0 && registro.valores.empty());
+}
+
+// Ejecuta las pruebas pequenas de la cola, generador y mediciones de Prim.
 int ejecutarPruebas() {
     const double infinito = std::numeric_limits<double>::infinity();
     const std::vector<std::vector<double>> casos = { // datitos de prueba
@@ -381,10 +427,12 @@ int ejecutarPruebas() {
 
     verificarGenerador();
     std::cout << "Pruebas del generador: conectividad, aristas, duplicados, pesos y reproducibilidad OK\n";
+    verificarMedicionesPrim();
+    std::cout << "Pruebas de Prim: MST, registros de tiempo e intercambios OK\n";
     return 0;
 }
 
-// Selecciona pruebas o memoria desde la terminal, sin modificar el codigo.
+// Selecciona pruebas, memoria o experimentos desde la terminal.
 int main(int argc, char* argv[]) {
     try {
         if (argc == 1 || (argc == 2 && std::string(argv[1]) == "--pruebas")) {
@@ -393,16 +441,31 @@ int main(int argc, char* argv[]) {
         if (argc == 2 && std::string(argv[1]) == "--memoria") {
             return ejecutarMemoria();
         }
+        if ((argc == 2 || argc == 3) && std::string(argv[1]) == "--piloto") {
+            return ejecutarExperimentos("todas", argc == 3 ? argv[2] : "resultados/piloto", true);
+        }
+        if ((argc == 3 || argc == 4) && std::string(argv[1]) == "--experimentos") {
+            return ejecutarExperimentos(argv[2], argc == 4 ? argv[3] : "resultados/binomial");
+        }
+        if ((argc == 2 || argc == 3) && std::string(argv[1]) == "--todo") {
+            ejecutarMemoria();
+            return ejecutarExperimentos("todas", argc == 3 ? argv[2] : "resultados/binomial");
+        }
         const bool ayuda = argc == 2 && (std::string(argv[1]) == "--ayuda" ||
                                          std::string(argv[1]) == "--help");
         if (!ayuda) {
             std::cerr << "Opcion no reconocida.\n";
         }
-        std::cout << "Uso: " << argv[0] << " [--pruebas | --memoria | --ayuda]\n"
+        std::cout << "Uso: " << argv[0] << " OPCION\n"
                   << "  --pruebas  Ejecuta las pruebas pequenas (opcion predeterminada).\n"
                   << "  --memoria  Consumo de memoria de la seccion 6.2.\n"
                   << "             Ejecuta V=2^15, E=2^20, semilla=42; consulta RAM y pico.\n"
-                  << "             Muestra tablas y proyecciones; requiere Linux con /proc.\n";
+                  << "             Muestra tablas y proyecciones; requiere Linux con /proc.\n"
+                  << "  --piloto [directorio]  Prueba A-D con grafos pequenos (10 repeticiones).\n"
+                  << "  --experimentos A|B|C|D|todas [directorio]  Tamanos oficiales, 10 repeticiones.\n"
+                  << "  --todo [directorio]  Ejecuta memoria y las cuatro series oficiales.\n"
+                  << "  Salidas: tablas en terminal y CSV por serie; no sobrescribe resultados.\n"
+                  << "  Directorios predeterminados: resultados/piloto y resultados/binomial.\n";
         return ayuda ? 0 : 1;
     } catch (const std::bad_alloc&) {
         std::cerr << "Error de memoria: no se pudo completar una reserva.\n"

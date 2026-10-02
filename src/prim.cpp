@@ -1,13 +1,17 @@
 #include "prim.h"
 #include "binomial_heap.h"
 
+#include <chrono>
 #include <limits>
 #include <stdexcept>
 
-PrimResult primBinomial(const Graph& G, int r) {
+PrimResult primBinomial(const Graph& G, int r, RegistroDecreaseKey* registro) {
     const std::size_t n = G.numVertices();
     if (r < 0 || static_cast<std::size_t>(r) >= n) {
         throw std::out_of_range("Raiz fuera de rango");
+    }
+    if (registro != nullptr) {
+        registro->valores.clear();
     }
 
     std::vector<double> costos(n, std::numeric_limits<double>::infinity());
@@ -32,7 +36,20 @@ PrimResult primBinomial(const Graph& G, int r) {
             if (Q.handle(u) != nullptr && w < costos[u]) {
                 costos[u] = w;
                 parent[u] = v;
-                resultado.intercambios += Q.decreaseKey(u, w);
+                std::size_t intercambios;
+                if (registro != nullptr && registro->medirTiempo) {
+                    const auto inicio = std::chrono::steady_clock::now();
+                    intercambios = Q.decreaseKey(u, w);
+                    const auto fin = std::chrono::steady_clock::now();
+                    registro->valores.push_back(
+                        std::chrono::duration_cast<std::chrono::nanoseconds>(fin - inicio).count());
+                } else {
+                    intercambios = Q.decreaseKey(u, w);
+                    if (registro != nullptr) {
+                        registro->valores.push_back(intercambios);
+                    }
+                }
+                resultado.intercambios += intercambios;
                 ++resultado.llamadasDecreaseKey;
             }
         }
