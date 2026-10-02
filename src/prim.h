@@ -4,10 +4,10 @@
 #include "graph.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <utility>
 #include <vector>
 
-// Aristas (padre, vértice), peso del MST y conteos de decreaseKey.
 struct PrimResult {
     std::vector<std::pair<int, int>> aristas;
     double pesoTotal = 0.0;
@@ -17,12 +17,15 @@ struct PrimResult {
     double tiempoDecreaseKey = 0.0;
 };
 
-// Construye el MST del grafo desde una raíz válida usando la cola binomial.
-// Requiere un grafo conexo; devuelve sus aristas, peso total y contadores.
-PrimResult primBinomial(const Graph& G, int r);
+struct RegistroDecreaseKey {
+    bool medirTiempo = false;
+    std::vector<std::uint64_t> valores;
+};
 
-// Construye el MST del grafo desde una raíz válida usando la cola de Fibonacci.
-// Requiere un grafo conexo; devuelve sus aristas, peso total y contadores.
-PrimResult primFibonacci(const Graph& G, int raiz);
+PrimResult primBinomial(const Graph& G, int r,
+                        RegistroDecreaseKey* registro = nullptr);
+
+PrimResult primFibonacci(const Graph& G, int r,
+                         RegistroDecreaseKey* registro = nullptr);
 
 #endif
