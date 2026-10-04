@@ -19,6 +19,7 @@
 
 namespace {
 
+// Constantes y tipos auxiliares (cumpliendo con lo pedido en el enuncaiado).
 constexpr int repeticiones = 10;
 constexpr int puntosCurva = 100;
 constexpr std::uint64_t semillaBase = 42;
@@ -31,6 +32,7 @@ struct Configuracion {
     int j;
 };
 
+// Registro de decreaseKey para medir tiempo y operaciones.
 struct ResultadoExperimento {
     PrimResult prim;
     double tiempoTotalMs = 0.0;
@@ -101,6 +103,7 @@ std::uint64_t memoria(const std::string& archivo,
         "No se pudo leer " + campo + " de " + archivo);
 }
 
+// Devuelve la cantidad de fallos mayores de página del proceso.
 long fallosMayores() {
     struct rusage uso{};
 
@@ -172,6 +175,7 @@ DatosGrafo identificar(const Graph& G, std::size_t E) {
     return datos;
 }
 
+// Verifica que el resultado de Prim sea válido.
 void verificarResultado(const PrimResult& T,
                         std::size_t V) {
     if (T.aristas.size() != V - 1 ||
@@ -223,6 +227,7 @@ std::uint64_t guardarCurva(
     return acumulado;
 }
 
+// Ejecuta Prim con la cola indicada y devuelve el resultado.
 ResultadoExperimento ejecutarAlgoritmo(
     const Graph& G,
     int raiz,
@@ -299,10 +304,7 @@ ResultadoExperimento ejecutarAlgoritmo(
             registro.valores.size() *
             sizeof(std::uint64_t);
 
-        /*
-         * Segunda pasada para contar operaciones estructurales.
-         * No se mide el tiempo de esta pasada.
-         */
+        // segunda pasada para medir operaciones
         registro.medirTiempo = false;
 
         const PrimResult conteo =
@@ -351,6 +353,7 @@ ResultadoExperimento ejecutarAlgoritmo(
     return resultado;
 }
 
+// Guarda información del entorno de ejecución.
 void guardarEntorno(
     std::ofstream& salida,
     char serie,
@@ -418,6 +421,7 @@ void guardarEntorno(
            "en pasadas separadas\n";
 }
 
+// Ejecuta la serie de experimentos indicada.
 void ejecutarSerie(
     char serie,
     const std::filesystem::path& carpeta,
@@ -849,6 +853,7 @@ void ejecutarSerie(
 
 } // namespace
 
+// Ejecuta la serie de experimentos indicada.
 int ejecutarExperimentos(
     const std::string& serie,
     const std::string& directorio,

@@ -5,9 +5,9 @@
 #include <utility>
 #include <vector>
 
+// Cola de prioridad Fibonacci que almacena pares (costo, vértice) con costos distintos.
 class FibonacciHeap {
-public:
-    // Par que representa el coste y el vertice asociado    
+public:  
     struct Content {
         double key;
         int vertice;
@@ -27,8 +27,10 @@ public:
         bool marked;
     };
 
+    // Crea una cola vacía para vértices en [0, cantidad_vertices).
     explicit FibonacciHeap(std::size_t cantidad_vertices);
 
+    // Construye la cola con el par (costos[v], v) para cada vértice.
     explicit FibonacciHeap(const std::vector<double>& costos);
 
     ~FibonacciHeap();
@@ -36,6 +38,7 @@ public:
     FibonacciHeap(const FibonacciHeap&) = delete;
     FibonacciHeap& operator=(const FibonacciHeap&) = delete;
 
+    // Inserta un vértice ausente; rechaza índices inválidos y costos NaN.
     void insert(double costo, int vertice);
 
     std::pair<double, int> extractMin();
@@ -47,6 +50,7 @@ public:
 
     const Node* handle(int vertice) const;
 
+// Permiten inspeccionar la estructura y el handle sin modificar nodos.
 private:
     Node* minimo;
     std::vector<Node*> handles;

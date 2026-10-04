@@ -5,9 +5,9 @@
 #include <utility>
 #include <vector>
 
+// Cola de prioridad binomial que almacena pares (costo, vértice) con costos distintos.
 class BinomialHeap {
 public:
-    // Par que se intercambia completo al reducir una clave.
     struct Content {
         double key;
         int vertice;
@@ -38,7 +38,6 @@ public:
     std::pair<double, int> extractMin();
 
     // Reduce el costo de un vértice presente y devuelve la cantidad de intercambios.
-    // Rechaza índices inválidos, vértices ausentes, costos NaN y aumentos de costo.
     std::size_t decreaseKey(int v, double c);
 
     bool empty() const;

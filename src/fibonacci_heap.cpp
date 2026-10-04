@@ -4,11 +4,13 @@
 #include <stdexcept>
 #include <utility>
 
+// Constructor de la cola de prioridad Fibonacci
 FibonacciHeap::FibonacciHeap(std::size_t cantidad_vertices)
     : minimo(nullptr),
       handles(cantidad_vertices, nullptr),
       cantidad(0) {}
 
+// Constructor de la cola de prioridad Fibonacci a partir de un vector de costos
 FibonacciHeap::FibonacciHeap(const std::vector<double>& costos)
     : FibonacciHeap(costos.size()) {
     for (std::size_t v = 0; v < costos.size(); ++v) {
@@ -16,12 +18,14 @@ FibonacciHeap::FibonacciHeap(const std::vector<double>& costos)
     }
 }
 
+// Destructor de la cola de prioridad Fibonacci
 FibonacciHeap::~FibonacciHeap() {
     if (minimo != nullptr) {
         destroy(minimo);
     }
 }
 
+// Agrega un nodo a la lista de raíces de la cola de Fibonacci
 void FibonacciHeap::addToRootList(Node* nodo) {
     if (minimo == nullptr) {
         nodo->left = nodo;
@@ -39,6 +43,7 @@ void FibonacciHeap::addToRootList(Node* nodo) {
     }
 }
 
+// Inserta un nuevo par (costo, vértice) en la cola de Fibonacci
 void FibonacciHeap::insert(double costo, int vertice) {
     if (vertice < 0 || static_cast<std::size_t>(vertice) >= handles.size()) {
         throw std::out_of_range("Vertice fuera de rango");
@@ -58,6 +63,7 @@ void FibonacciHeap::insert(double costo, int vertice) {
     ++cantidad;
 }
 
+// Extrae y devuelve el par (costo, vértice) mínimo de la cola de Fibonacci
 void FibonacciHeap::removeFromList(Node* nodo) {
     nodo->left->right = nodo->right;
     nodo->right->left = nodo->left;
@@ -66,6 +72,7 @@ void FibonacciHeap::removeFromList(Node* nodo) {
     nodo->right = nodo;
 }
 
+// Extrae y devuelve el par (costo, vértice) mínimo de la cola de Fibonacci
 std::pair<double, int> FibonacciHeap::extractMin() {
     if (empty()) {
         throw std::underflow_error("La cola esta vacia");
@@ -124,6 +131,7 @@ std::pair<double, int> FibonacciHeap::extractMin() {
     return resultado;
 }
 
+// Consolidates los árboles en la lista de raíces para asegurar que no haya dos árboles con el mismo grado
 void FibonacciHeap::consolidate() {
     if (minimo == nullptr) {
         return;
@@ -178,6 +186,7 @@ void FibonacciHeap::consolidate() {
     }
 }
 
+// Enlaza el nodo hijo a la lista de hijos del nodo padre
 void FibonacciHeap::link(Node* child, Node* parent) {
     removeFromList(child);
 
@@ -201,6 +210,7 @@ void FibonacciHeap::link(Node* child, Node* parent) {
     ++parent->degree;
 }
 
+// Corta el nodo x de su padre y lo agrega a la lista de raíces
 std::size_t FibonacciHeap::decreaseKey(int v, double c) {
     if (v < 0 || static_cast<std::size_t>(v) >=handles.size()) {
         throw std::out_of_range("Vertice fuera de rango");
@@ -239,8 +249,8 @@ std::size_t FibonacciHeap::decreaseKey(int v, double c) {
     return num_cuts;
 }
 
+// Corta el nodo x de su padre y lo agrega a la lista de raíces
 void FibonacciHeap::cut(Node* x, Node* y) {
-    // Eliminar x de la lista de hijos de y
     if (x->right == x) {
         y->child = nullptr;
     } else {
@@ -251,14 +261,12 @@ void FibonacciHeap::cut(Node* x, Node* y) {
     }
 
     --y->degree;
-
-    // x pasa a ser raíz
     x->parent = nullptr;
     x->marked = false;
-
     addToRootList(x);
 }
 
+// Realiza cortes en cascada desde el nodo y hacia arriba, si es necesario
 std::size_t FibonacciHeap::cascadingCut(Node* y) {
     Node* z = y->parent;
 
@@ -276,14 +284,17 @@ std::size_t FibonacciHeap::cascadingCut(Node* y) {
 
 }
 
+// Devuelve true si la cola de Fibonacci está vacía
 bool FibonacciHeap::empty() const {
     return cantidad == 0;
 }
 
+// Devuelve la cantidad de pares (costo, vértice) en la cola de Fibonacci
 std::size_t FibonacciHeap::size() const {
     return cantidad;
 }
 
+// Devuelve el puntero al nodo que representa al vértice dado
 const FibonacciHeap::Node* FibonacciHeap::handle(int vertice) const {
     if (vertice < 0 || static_cast<std::size_t>(vertice) >= handles.size()) {
         throw std::out_of_range("Vertice fuera de rango");
@@ -291,6 +302,7 @@ const FibonacciHeap::Node* FibonacciHeap::handle(int vertice) const {
     return handles[vertice];
 }
 
+// Destruye todos los nodos de la cola de Fibonacci a partir del nodo dado
 void FibonacciHeap::destroy(Node* nodo) {
     if (nodo == nullptr) {
         return;

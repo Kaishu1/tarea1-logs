@@ -7,8 +7,10 @@
 #include <unordered_set>
 #include <utility>
 
+// Constructor de la clase Graph que inicializa un grafo con una cantidad dada de vértices
 Graph::Graph(std::size_t cantidadVertices) : adyacencia(cantidadVertices) {}
 
+// Agrega una arista entre dos vértices distintos con un peso positivo finito
 void Graph::addEdge(int u, int v, double peso) {
     if (u < 0 || v < 0 || static_cast<std::size_t>(u) >= adyacencia.size() ||
         static_cast<std::size_t>(v) >= adyacencia.size()) {
@@ -21,14 +23,17 @@ void Graph::addEdge(int u, int v, double peso) {
     adyacencia[v].push_back({u, peso});
 }
 
+// Devuelve la cantidad de vértices en el grafo
 std::size_t Graph::numVertices() const {
     return adyacencia.size();
 }
 
+// Devuelve los vecinos y pesos del vértice indicado, sin copiar la lista
 const std::vector<Graph::Neighbor>& Graph::neighbors(int vertice) const {
     return adyacencia.at(vertice);
 }
 
+// Genera un grafo simple y conexo con una cantidad dada de vértices y aristas, usando una semilla para la generación aleatoria
 Graph generateConnectedGraph(std::size_t cantidadVertices, std::size_t cantidadAristas,
                             std::uint64_t semilla) {
     if (cantidadVertices == 0 ||

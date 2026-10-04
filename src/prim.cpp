@@ -6,6 +6,7 @@
 #include <limits>
 #include <stdexcept>
 
+// Implementación de Prim usando colas de prioridad binomial, con registro opcional de decreaseKey.
 PrimResult primBinomial(const Graph& G, int r, RegistroDecreaseKey* registro) {
     const std::size_t n = G.numVertices();
 
@@ -80,6 +81,7 @@ PrimResult primBinomial(const Graph& G, int r, RegistroDecreaseKey* registro) {
     return resultado;
 }
 
+// Implementación de Prim usando colas de prioridad Fibonacci, con registro opcional de decreaseKey.
 PrimResult primFibonacci(const Graph& G, int r,
                          RegistroDecreaseKey* registro) {
     const std::size_t n = G.numVertices();
