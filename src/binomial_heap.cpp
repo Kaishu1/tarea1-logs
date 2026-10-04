@@ -4,10 +4,11 @@
 #include <stdexcept>
 #include <utility>
 
-// Constructor de la cola de prioridad binomial
+// Crea una cola vacía con handles para cantidad_vertices índices.
 BinomialHeap::BinomialHeap(std::size_t cantidad_vertices)
     : raices(nullptr), handles(cantidad_vertices, nullptr), cantidad(0) {}
 
+// Inicializa la cola con un elemento por cada costo del vector.
 BinomialHeap::BinomialHeap(const std::vector<double>& costos)
     : BinomialHeap(costos.size()) {
     for (std::size_t v = 0; v < costos.size(); ++v) {
@@ -15,13 +16,12 @@ BinomialHeap::BinomialHeap(const std::vector<double>& costos)
     }
 }
 
-// Destructor de la cola de prioridad binomial
+// Libera todos los árboles de la cola.
 BinomialHeap::~BinomialHeap() {
     destroyTrees(raices);
 }
 
-// linkTrees(Q, x, y)
-// qué hace: unir dos árboles del mismo grado y devolver su nueva raíz
+// Enlaza dos árboles del mismo grado y devuelve como raíz el de menor clave.
 BinomialHeap::Node* BinomialHeap::linkTrees(Node* primero, Node* segundo) {
     if (segundo->content.key < primero->content.key) {
         std::swap(primero, segundo);
@@ -33,8 +33,7 @@ BinomialHeap::Node* BinomialHeap::linkTrees(Node* primero, Node* segundo) {
     return primero;
 }
 
-// insert(Q, v, c)
-// qué hace: insertar el par (costo, vértice) en la cola
+// Inserta (costo, vertice); rechaza índices inválidos, duplicados y claves NaN.
 void BinomialHeap::insert(double costo, int vertice) {
     if (vertice < 0 || static_cast<std::size_t>(vertice) >= handles.size()) {
         throw std::out_of_range("Vertice fuera de rango");
@@ -61,8 +60,7 @@ void BinomialHeap::insert(double costo, int vertice) {
     ++cantidad;
 }
 
-// unionRoots(Q, r1, r2)
-// qué hace: mezclar raíces ordenadas por grado y enlazar árboles de igual grado
+// Mezcla listas de raíces ordenadas por grado y devuelve la lista consolidada.
 BinomialHeap::Node* BinomialHeap::unionRoots(Node* primera, Node* segunda) {
     Node auxiliar{};
     Node* ultimo = &auxiliar;
@@ -103,8 +101,7 @@ BinomialHeap::Node* BinomialHeap::unionRoots(Node* primera, Node* segunda) {
     return cabeza;
 }
 
-// extractMin(Q)
-// qué hace: obtener y eliminar el par de menor costo
+// Elimina y devuelve (clave, vértice) mínimo; lanza underflow_error si está vacía.
 std::pair<double, int> BinomialHeap::extractMin() {
     if (empty()) {
         throw std::underflow_error("La cola esta vacia");
@@ -146,8 +143,7 @@ std::pair<double, int> BinomialHeap::extractMin() {
     return resultado;
 }
 
-// decreaseKey(Q, v, c)
-// qué hace: acceder al par que representa al nodo v y reducir su costo a c
+// Reduce la clave de v a c y devuelve los intercambios usados para restaurar el orden.
 std::size_t BinomialHeap::decreaseKey(int v, double c) {
     if (v < 0 || static_cast<std::size_t>(v) >= handles.size()) {
         throw std::out_of_range("Vertice fuera de rango");
@@ -175,26 +171,22 @@ std::size_t BinomialHeap::decreaseKey(int v, double c) {
     return intercambios;
 }
 
-// empty(Q)
-// qué hace: determinar si la cola está vacía
+// Indica si la cola no contiene elementos.
 bool BinomialHeap::empty() const {
     return cantidad == 0;
 }
 
-// size(Q)
-// qué hace: obtener la cantidad de pares (costo, vértice) en la cola
+// Devuelve la cantidad de elementos.
 std::size_t BinomialHeap::size() const {
     return cantidad;
 }
 
-// roots(Q)
-// qué hace: obtener el puntero al primer nodo raíz de la cola
+// Devuelve la primera raíz o nullptr si no hay árboles.
 const BinomialHeap::Node* BinomialHeap::roots() const {
     return raices;
 }
 
-// handle(Q, v)
-// qué hace: obtener el puntero al nodo que representa al vértice v
+// Devuelve el nodo de vertice o nullptr si no está en la cola; valida el índice.
 const BinomialHeap::Node* BinomialHeap::handle(int vertice) const {
     if (vertice < 0 || static_cast<std::size_t>(vertice) >= handles.size()) {
         throw std::out_of_range("Vertice fuera de rango");
@@ -202,8 +194,7 @@ const BinomialHeap::Node* BinomialHeap::handle(int vertice) const {
     return handles[vertice];
 }
 
-// destroyTrees(Q, r)
-// qué hace: liberar memoria de todos los nodos en el árbol con raíz r
+// Libera recursivamente los árboles enlazados desde raiz.
 void BinomialHeap::destroyTrees(Node* raiz) {
     while (raiz != nullptr) {
         Node* siguiente = raiz->hermano;

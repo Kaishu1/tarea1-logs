@@ -28,11 +28,12 @@ constexpr double MiB = 1048576.0;
 using Reloj = std::chrono::steady_clock;
 
 struct Configuracion {
+    // Exponentes usados para calcular V = 2^i y E = 2^j.
     int i;
     int j;
 };
 
-// Registro de decreaseKey para medir tiempo y operaciones.
+// Resultado de una ejecución: Prim, tiempos y consumo de recursos.
 struct ResultadoExperimento {
     PrimResult prim;
     double tiempoTotalMs = 0.0;
@@ -44,7 +45,7 @@ struct ResultadoExperimento {
     long fallosMayores = 0;
 };
 
-// Devuelve las cinco configuraciones de cada serie.
+// Devuelve los cinco pares de exponentes de serie; piloto selecciona tamaños reducidos.
 std::vector<Configuracion> configuraciones(char serie, bool piloto) {
     std::vector<Configuracion> casos;
 
@@ -81,7 +82,7 @@ std::vector<Configuracion> configuraciones(char serie, bool piloto) {
     return casos;
 }
 
-// Lee bytes desde /proc.
+// Lee el valor en KiB de campo en archivo y lo devuelve en bytes; lanza si no aparece.
 std::uint64_t memoria(const std::string& archivo,
                       const std::string& campo) {
     std::ifstream entrada(archivo);
@@ -103,7 +104,7 @@ std::uint64_t memoria(const std::string& archivo,
         "No se pudo leer " + campo + " de " + archivo);
 }
 
-// Devuelve la cantidad de fallos mayores de página del proceso.
+// Devuelve los fallos mayores del proceso o lanza si falla getrusage.
 long fallosMayores() {
     struct rusage uso{};
 
@@ -116,11 +117,12 @@ long fallosMayores() {
 }
 
 struct DatosGrafo {
+    // Huella reproducible del grafo y capacidad reservada por sus listas.
     std::uint64_t huella = 14695981039346656037ULL;
     std::uint64_t capacidadBytes = 0;
 };
 
-// Identifica el grafo y calcula la memoria de sus listas.
+// Calcula huella y capacidad de G, usando E para validar el número de aristas.
 DatosGrafo identificar(const Graph& G, std::size_t E) {
     DatosGrafo datos;
 
@@ -175,7 +177,7 @@ DatosGrafo identificar(const Graph& G, std::size_t E) {
     return datos;
 }
 
-// Verifica que el resultado de Prim sea válido.
+// Comprueba cantidad de aristas, peso finito y llamadas mínimas para V vértices.
 void verificarResultado(const PrimResult& T,
                         std::size_t V) {
     if (T.aristas.size() != V - 1 ||
@@ -186,9 +188,8 @@ void verificarResultado(const PrimResult& T,
     }
 }
 
-// Guarda una curva acumulada.
-// Para tiempo: nanosegundos.
-// Para operaciones: intercambios o cortes.
+// Escribe la curva acumulada de registro y devuelve su valor final.
+// Recibe metadatos del caso para completar cada fila del CSV.
 std::uint64_t guardarCurva(
     std::ofstream& salida,
     const RegistroDecreaseKey& registro,
@@ -227,7 +228,7 @@ std::uint64_t guardarCurva(
     return acumulado;
 }
 
-// Ejecuta Prim con la cola indicada y devuelve el resultado.
+// Ejecuta una variante de Prim y mide sus recursos; devuelve métricas y, si se pide, registra decreaseKey.
 ResultadoExperimento ejecutarAlgoritmo(
     const Graph& G,
     int raiz,
@@ -353,7 +354,7 @@ ResultadoExperimento ejecutarAlgoritmo(
     return resultado;
 }
 
-// Guarda información del entorno de ejecución.
+// Escribe en salida información del sistema, compilador y configuración de la serie.
 void guardarEntorno(
     std::ofstream& salida,
     char serie,
@@ -421,7 +422,7 @@ void guardarEntorno(
            "en pasadas separadas\n";
 }
 
-// Ejecuta la serie de experimentos indicada.
+// Ejecuta una serie en carpeta, escribe sus archivos de resultados e informa el progreso.
 void ejecutarSerie(
     char serie,
     const std::filesystem::path& carpeta,
@@ -853,7 +854,7 @@ void ejecutarSerie(
 
 } // namespace
 
-// Ejecuta la serie de experimentos indicada.
+// Valida serie y directorio, ejecuta una o todas las series y devuelve 0 al completar.
 int ejecutarExperimentos(
     const std::string& serie,
     const std::string& directorio,

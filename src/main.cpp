@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <string>
 
-// Ejecuta la serie de experimentos indicada. Piloto usa tamaños pequeños. Imprime resultados y crea CSV en directorio/serie. Rechaza archivos de resultados existentes para evitar sobrescribir mediciones. Devuelve cero al completar; lanza una excepción si falla alguna medición.
+// Procesa las opciones de argv; argc indica su cantidad y devuelve 0 en éxito o 1 ante error.
 int main(int argc, char* argv[]) {
     try {
         if (argc == 1) {
